@@ -24,6 +24,8 @@ from bisenetv2.lr_scheduler import WarmupPolyLrScheduler
 from bisenetv2.meters import TimeMeter, AvgMeter
 from bisenetv2.logger import setup_logger, print_log_msg
 
+from bisenetv2.hair_dataset import HairSegmentationDataset as Hair_Dt
+
 # apex
 has_apex = True
 try:
@@ -47,9 +49,10 @@ max_iter = 150000  + warmup_iters
 ims_per_gpu = 8
 
 
+
 def parse_args():
     parse = argparse.ArgumentParser()
-    parse.add_argument('--local_rank', dest='local_rank', type=int, default=-1,)
+    parse.add_argument('--local_rank', dest='local_rank', type=int, default=0,)
     parse.add_argument('--sync-bn', dest='use_sync_bn', action='store_true',)
     parse.add_argument('--fp16', dest='use_fp16', action='store_true',)
     parse.add_argument('--port', dest='port', type=int, default=44554,)
@@ -132,8 +135,11 @@ def train():
     is_dist = dist.is_initialized()
 
     ## dataset
-    dl = get_data_loader('./data/', ims_per_gpu, max_iter,
-            mode='train', distributed=is_dist)
+    # dl = get_data_loader('./data/', ims_per_gpu, max_iter,
+    #         mode='train', distributed=is_dist)
+
+    dataset = Hair_Dt("val")
+    dl = DataLoader(dataset, batch_size=64, shuffle=True)
 
     ## model
     net, criteria_pre, criteria_aux = set_model()
