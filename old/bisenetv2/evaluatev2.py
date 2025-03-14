@@ -22,7 +22,8 @@ from bisenetv2.bisenetv2 import BiSeNetV2
 from bisenetv2.logger import setup_logger
 from bisenetv2.cityscapes_cv2 import get_data_loader
 
-
+from bisenetv2.hair_dataset import HairSegmentationDataset as Hair_Dt
+from torch.utils.data import DataLoader
 
 
 class MscEvalV0(object):
@@ -38,8 +39,8 @@ class MscEvalV0(object):
         else:
             diter = enumerate(tqdm(dl))
         for i, (imgs, label) in diter:
-            N, _, H, W = label.shape
-            label = label.squeeze(1).cuda()
+            _, H, W = label.shape
+            label = label.squeeze(0).cuda()
             size = label.size()[-2:]
             imgs = imgs.cuda()
             logits = net(imgs)[0]
@@ -62,12 +63,12 @@ class MscEvalV0(object):
 
 def eval_model(net, ims_per_gpu):
     is_dist = dist.is_initialized()
-    dl = get_data_loader('./data', ims_per_gpu, mode='val', distributed=is_dist)
-    net.eval()
+    dataset = Hair_Dt("val")
+    dl = DataLoader(dataset, batch_size=64, shuffle=True)
 
     with torch.no_grad():
         single_scale = MscEvalV0()
-        mIOU = single_scale(net, dl, 19)
+        mIOU = single_scale(net, dl, 2)
     logger = logging.getLogger()
     logger.info('mIOU is: %s\n', mIOU)
 
@@ -77,7 +78,7 @@ def evaluate(weight_pth):
 
     ## model
     logger.info('setup and restore model')
-    net = BiSeNetV2(19)
+    net = BiSeNetV2(2)
     net.load_state_dict(torch.load(weight_pth))
     net.cuda()
 
@@ -101,7 +102,7 @@ def parse_args():
     parse.add_argument('--weight-path', dest='weight_pth', type=str,
                        default='model_final.pth',)
     parse.add_argument('--port', dest='port', type=int, default=44553,)
-    parse.add_argument('--respth', dest='respth', type=str, default='./res',)
+    parse.add_argument('--respth', dest='respth', type=str, default='./bisenetv2/res',)
     return parse.parse_args()
 
 

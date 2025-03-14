@@ -25,6 +25,7 @@ from bisenetv2.meters import TimeMeter, AvgMeter
 from bisenetv2.logger import setup_logger, print_log_msg
 
 from bisenetv2.hair_dataset import HairSegmentationDataset as Hair_Dt
+from torch.utils.data import DataLoader
 
 # apex
 has_apex = True
@@ -56,7 +57,7 @@ def parse_args():
     parse.add_argument('--sync-bn', dest='use_sync_bn', action='store_true',)
     parse.add_argument('--fp16', dest='use_fp16', action='store_true',)
     parse.add_argument('--port', dest='port', type=int, default=44554,)
-    parse.add_argument('--respth', dest='respth', type=str, default='./res',)
+    parse.add_argument('--respth', dest='respth', type=str, default='./bisenetv2/res',)
     return parse.parse_args()
 
 args = parse_args()
@@ -64,7 +65,7 @@ args = parse_args()
 
 
 def set_model():
-    net = BiSeNetV2(19)
+    net = BiSeNetV2(2)
     if args.use_sync_bn: net = set_syncbn(net)
     net.cuda()
     net.train()
