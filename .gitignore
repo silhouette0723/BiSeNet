@@ -106,7 +106,7 @@ venv.bak/
 ## Coin: 
 play.py
 preprocess_data.py
-res/
+# res/
 adj.md
 tensorrt/build/*
 datasets/coco/train.txt
