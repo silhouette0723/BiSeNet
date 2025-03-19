@@ -63,7 +63,7 @@ class MscEvalV0(object):
 
 def eval_model(net, ims_per_gpu):
     is_dist = dist.is_initialized()
-    dataset = Hair_Dt("val")
+    dataset = Hair_Dt("test")
     dl = DataLoader(dataset, batch_size=64, shuffle=True)
 
     with torch.no_grad():

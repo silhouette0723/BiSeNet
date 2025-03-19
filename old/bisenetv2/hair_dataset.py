@@ -14,7 +14,8 @@ DATA_DIR = "/workspace/Bisenetv2"
 
 # for wsl
 # DATA_DIR = "/mnt/d/Hair_Segmentation/Data"
-INPUT_SIZE = (256,128)
+#(H, W)
+INPUT_SIZE = (192, 160)
 
 class HairSegmentationDataset(Dataset):
     def __init__(self, dataset_name, root_dir=DATA_DIR, target_size=INPUT_SIZE):
@@ -30,7 +31,7 @@ class HairSegmentationDataset(Dataset):
         ])
     
     def pad_image(self, img, target_size):
-        img_padded = cv2.resize(img, target_size, interpolation=cv2.INTER_AREA)
+        img_padded = cv2.resize(img, (target_size[1],target_size[0]), interpolation=cv2.INTER_AREA)
         return img_padded
     
     def __len__(self):
