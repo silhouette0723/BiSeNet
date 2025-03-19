@@ -131,79 +131,75 @@ def save_model(states, save_pth):
             torch.save(state, modelpth)
 
 
-def train():
+def train(epochs=10):  # 允许传入 epochs 参数，默认为 10 轮
     logger = logging.getLogger()
     is_dist = dist.is_initialized()
-
-    ## dataset
-    # dl = get_data_loader('./data/', ims_per_gpu, max_iter,
-    #         mode='train', distributed=is_dist)
 
     dataset = Hair_Dt("val")
     dl = DataLoader(dataset, batch_size=64, shuffle=True)
 
-    ## model
     net, criteria_pre, criteria_aux = set_model()
-
-    ## optimizer
     optim = set_optimizer(net)
 
-    ## fp16
     if has_apex and args.use_fp16:
         net, optim = amp.initialize(net, optim, opt_level='O1')
 
-    ## ddp training
     net = set_model_dist(net)
 
-    ## meters
     time_meter, loss_meter, loss_pre_meter, loss_aux_meters = set_meters()
 
-    ## lr scheduler
-    lr_schdr = WarmupPolyLrScheduler(optim, power=0.9,
-        max_iter=max_iter, warmup_iter=warmup_iters,
-        warmup_ratio=0.1, warmup='exp', last_epoch=-1,)
+    lr_schdr = WarmupPolyLrScheduler(
+        optim, power=0.9, max_iter=max_iter, warmup_iter=warmup_iters,
+        warmup_ratio=0.1, warmup='exp', last_epoch=-1,
+    )
 
-    ## train loop
-    for it, (im, lb) in enumerate(dl):
-        im = im.cuda()
-        lb = lb.cuda()
+    for epoch in range(epochs):  # 训练多个 epoch
+        logger.info(f"Starting epoch {epoch+1}/{epochs}...")
 
-        lb = torch.squeeze(lb, 1)
+        for it, (im, lb) in enumerate(dl):
+            im = im.cuda()
+            lb = lb.cuda()
+            lb = torch.squeeze(lb, 1)
 
-        optim.zero_grad()
-        logits, *logits_aux = net(im)
-        loss_pre = criteria_pre(logits, lb)
-        loss_aux = [crit(lgt, lb) for crit, lgt in zip(criteria_aux, logits_aux)]
-        loss = loss_pre + sum(loss_aux)
-        if has_apex:
-            with amp.scale_loss(loss, optim) as scaled_loss:
-                scaled_loss.backward()
-        else:
-            loss.backward()
-        optim.step()
-        torch.cuda.synchronize()
-        lr_schdr.step()
+            optim.zero_grad()
+            logits, *logits_aux = net(im)
+            loss_pre = criteria_pre(logits, lb)
+            loss_aux = [crit(lgt, lb) for crit, lgt in zip(criteria_aux, logits_aux)]
+            loss = loss_pre + sum(loss_aux)
 
-        time_meter.update()
-        loss_meter.update(loss.item())
-        loss_pre_meter.update(loss_pre.item())
-        _ = [mter.update(lss.item()) for mter, lss in zip(loss_aux_meters, loss_aux)]
+            if has_apex:
+                with amp.scale_loss(loss, optim) as scaled_loss:
+                    scaled_loss.backward()
+            else:
+                loss.backward()
+            optim.step()
+            torch.cuda.synchronize()
+            lr_schdr.step()
 
-        ## print training log message
-        if (it + 1) % 100 == 0:
-            lr = lr_schdr.get_lr()
-            lr = sum(lr) / len(lr)
-            print_log_msg(
-                it, max_iter, lr, time_meter, loss_meter,
-                loss_pre_meter, loss_aux_meters)
+            time_meter.update()
+            loss_meter.update(loss.item())
+            loss_pre_meter.update(loss_pre.item())
+            _ = [mter.update(lss.item()) for mter, lss in zip(loss_aux_meters, loss_aux)]
 
-    ## dump the final model and evaluate the result
+            if (it + 1) % 100 == 0:
+                lr = lr_schdr.get_lr()
+                lr = sum(lr) / len(lr)
+                print_log_msg(it, max_iter, lr, time_meter, loss_meter, loss_pre_meter, loss_aux_meters)
+
+        # 每个 epoch 结束后保存模型
+        if (epoch + 1) % 5 == 0:  # 例如，每 5 个 epoch 保存一次
+            save_pth = osp.join(args.respth, f'model_epoch_{epoch+1}.pth')
+            if dist.get_rank() == 0:
+                torch.save(net.module.state_dict(), save_pth)
+            logger.info(f'Model saved at epoch {epoch+1}')
+
+    # 训练结束后保存最终模型
     save_pth = osp.join(args.respth, 'model_final.pth')
-    logger.info('\nsave models to {}'.format(save_pth))
-    state = net.module.state_dict()
-    if dist.get_rank() == 0: torch.save(state, save_pth)
+    if dist.get_rank() == 0:
+        torch.save(net.module.state_dict(), save_pth)
+    logger.info('\nFinal model saved')
 
-    logger.info('\nevaluating the final model')
+    logger.info('\nEvaluating the final model...')
     torch.cuda.empty_cache()
     eval_model(net, 4)
 
