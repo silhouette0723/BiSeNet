@@ -3,7 +3,10 @@
 
 
 from logger import setup_logger
-from model import BiSeNet
+# from model import BiSeNet
+
+from bisenetv2.bisenetv2 import BiSeNetV2
+
 from cityscapes import CityScapes
 from loss import OhemCELoss
 from evaluate import evaluate
@@ -34,7 +37,7 @@ def parse_args():
             '--local_rank',
             dest = 'local_rank',
             type = int,
-            default = -1,
+            default = 0,
             )
     parse.add_argument(
             '--ckpt',
@@ -57,10 +60,10 @@ def train():
     setup_logger(respth)
 
     ## dataset
-    n_classes = 19
+    n_classes = 2
     n_img_per_gpu = 8
     n_workers = 4
-    cropsize = [1024, 1024]
+    cropsize = [224, 224]
     #  cropsize = [1024, 512]
     ds = CityScapes('./data', cropsize=cropsize, mode='train')
     sampler = torch.utils.data.distributed.DistributedSampler(ds)
@@ -74,7 +77,7 @@ def train():
 
     ## model
     ignore_idx = 255
-    net = BiSeNet(n_classes=n_classes)
+    net = BiSeNetV2(n_classes=n_classes)
     if not args.ckpt is None:
         net.load_state_dict(torch.load(args.ckpt, map_location='cpu'))
     net.cuda()
