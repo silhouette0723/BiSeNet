@@ -187,7 +187,8 @@ def train(epochs=10):  # 允许传入 epochs 参数，默认为 10 轮
                 print_log_msg(it, max_iter, lr, time_meter, loss_meter, loss_pre_meter, loss_aux_meters)
 
         # 每个 epoch 结束后保存模型
-        if (epoch + 1) % 5 == 0:  # 例如，每 5 个 epoch 保存一次
+        # if (epoch + 1) % 5 == 0:  # 例如，每 5 个 epoch 保存一次
+        if True:
             save_pth = osp.join(args.respth, f'model_epoch_{epoch+1}.pth')
             if dist.get_rank() == 0:
                 torch.save(net.module.state_dict(), save_pth)
