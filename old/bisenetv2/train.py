@@ -138,7 +138,7 @@ def train(epochs=10):  # 允许传入 epochs 参数，默认为 100 轮
     is_dist = dist.is_initialized()
 
     dataset = Hair_Dt("val")
-    dl = DataLoader(dataset, batch_size=64, shuffle=True)
+    dl = DataLoader(dataset, batch_size=16, shuffle=True)
 
     net, criteria_pre, criteria_aux = set_model()
     optim = set_optimizer(net)
@@ -166,6 +166,11 @@ def train(epochs=10):  # 允许传入 epochs 参数，默认为 100 轮
             optim.zero_grad()
             logits, *logits_aux = net(im)
             loss_pre = criteria_pre(logits, lb)
+            # print(f"22222222:{logits_aux[0].shape}")
+            # print(f"22222222:{logits_aux[1].shape}")
+            # print(f"22222222:{logits_aux[2].shape}")
+            # print(f"22222222:{logits_aux[3].shape}")
+            # print(f"22222222:{len(logits_aux)}")
             loss_aux = [crit(lgt, lb) for crit, lgt in zip(criteria_aux, logits_aux)]
             loss = loss_pre + sum(loss_aux)
 

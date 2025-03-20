@@ -342,12 +342,15 @@ class BiSeNetV2(nn.Module):
     def forward(self, x):
         size = x.size()[2:]
         feat_d = self.detail(x)
+        # print(f"111111111111111:{feat_d.shape}")
         feat2, feat3, feat4, feat5_4, feat_s = self.segment(x)
         feat_head = self.bga(feat_d, feat_s)
+        print(f"111111: {feat2.shape}")
 
         logits = self.head(feat_head)
         if self.aux_mode == 'train':
             logits_aux2 = self.aux2(feat2)
+            # print(f"111111: {logits_aux2.shape}")
             logits_aux3 = self.aux3(feat3)
             logits_aux4 = self.aux4(feat4)
             logits_aux5_4 = self.aux5_4(feat5_4)

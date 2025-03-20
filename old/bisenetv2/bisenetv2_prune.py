@@ -50,18 +50,18 @@ class DetailBranch(nn.Module):
     def __init__(self):
         super(DetailBranch, self).__init__()
         self.S1 = nn.Sequential(
-            ConvBNReLU(3, 32, 3, stride=2),
-            ConvBNReLU(32, 32, 3, stride=1),
+            ConvBNReLU(3, 16, 3, stride=2),
+            ConvBNReLU(16, 16, 3, stride=1),
         )
         self.S2 = nn.Sequential(
-            ConvBNReLU(32, 32, 3, stride=2),
-            ConvBNReLU(32, 32, 3, stride=1),
-            ConvBNReLU(32, 32, 3, stride=1),
+            ConvBNReLU(16, 16, 3, stride=2),
+            ConvBNReLU(16, 16, 3, stride=1),
+            ConvBNReLU(16, 16, 3, stride=1),
         )
         self.S3 = nn.Sequential(
-            ConvBNReLU(32, 64, 3, stride=2),
-            ConvBNReLU(64, 64, 3, stride=1),
-            ConvBNReLU(64, 64, 3, stride=1),
+            ConvBNReLU(16, 32, 3, stride=2),
+            ConvBNReLU(32, 32, 3, stride=1),
+            ConvBNReLU(32, 32, 3, stride=1),
         )
 
     def forward(self, x):
@@ -75,14 +75,14 @@ class StemBlock(nn.Module):
 
     def __init__(self):
         super(StemBlock, self).__init__()
-        self.conv = ConvBNReLU(3, 16, 3, stride=2)
+        self.conv = ConvBNReLU(3, 8, 3, stride=2)
         self.left = nn.Sequential(
-            ConvBNReLU(16, 8, 1, stride=1, padding=0),
-            ConvBNReLU(8, 16, 3, stride=2),
+            ConvBNReLU(8, 4, 1, stride=1, padding=0),
+            ConvBNReLU(4, 8, 3, stride=2),
         )
         self.right = nn.MaxPool2d(
             kernel_size=3, stride=2, padding=1, ceil_mode=False)
-        self.fuse = ConvBNReLU(32, 16, 3, stride=1)
+        self.fuse = ConvBNReLU(16, 8, 3, stride=1)
 
     def forward(self, x):
         feat = self.conv(x)
@@ -97,10 +97,10 @@ class CEBlock(nn.Module):
 
     def __init__(self):
         super(CEBlock, self).__init__()
-        self.bn = nn.BatchNorm2d(128)
-        self.conv_gap = ConvBNReLU(128, 128, 1, stride=1, padding=0)
+        self.bn = nn.BatchNorm2d(64)
+        self.conv_gap = ConvBNReLU(64, 64, 1, stride=1, padding=0)
         #TODO: in paper here is naive conv2d, no bn-relu
-        self.conv_last = ConvBNReLU(128, 128, 3, stride=1)
+        self.conv_last = ConvBNReLU(64, 64, 3, stride=1)
 
     def forward(self, x):
         feat = torch.mean(x, dim=(2, 3), keepdim=True)
@@ -197,18 +197,18 @@ class SegmentBranch(nn.Module):
         super(SegmentBranch, self).__init__()
         self.S1S2 = StemBlock()
         self.S3 = nn.Sequential(
+            GELayerS2(8, 16),
+            GELayerS1(16, 16),
+        )
+        self.S4 = nn.Sequential(
             GELayerS2(16, 32),
             GELayerS1(32, 32),
         )
-        self.S4 = nn.Sequential(
+        self.S5_4 = nn.Sequential(
             GELayerS2(32, 64),
             GELayerS1(64, 64),
-        )
-        self.S5_4 = nn.Sequential(
-            GELayerS2(64, 128),
-            GELayerS1(128, 128),
-            GELayerS1(128, 128),
-            GELayerS1(128, 128),
+            GELayerS1(64, 64),
+            GELayerS1(64, 64),
         )
         self.S5_5 = CEBlock()
 
@@ -227,33 +227,33 @@ class BGALayer(nn.Module):
         super(BGALayer, self).__init__()
         self.left1 = nn.Sequential(
             nn.Conv2d(
-                128, 128, kernel_size=3, stride=1,
-                padding=1, groups=128, bias=False),
-            nn.BatchNorm2d(128),
+                64, 64, kernel_size=3, stride=1,
+                padding=1, groups=64, bias=False),
+            nn.BatchNorm2d(64),
             nn.Conv2d(
-                128, 128, kernel_size=1, stride=1,
+                64, 64, kernel_size=1, stride=1,
                 padding=0, bias=False),
         )
         self.left2 = nn.Sequential(
             nn.Conv2d(
-                128, 128, kernel_size=3, stride=2,
+                64, 64, kernel_size=3, stride=2,
                 padding=1, bias=False),
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(64),
             nn.AvgPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=False)
         )
         self.right1 = nn.Sequential(
             nn.Conv2d(
-                128, 128, kernel_size=3, stride=1,
+                64, 64, kernel_size=3, stride=1,
                 padding=1, bias=False),
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(64),
         )
         self.right2 = nn.Sequential(
             nn.Conv2d(
-                128, 128, kernel_size=3, stride=1,
-                padding=1, groups=128, bias=False),
-            nn.BatchNorm2d(128),
+                64, 64, kernel_size=3, stride=1,
+                padding=1, groups=64, bias=False),
+            nn.BatchNorm2d(64),
             nn.Conv2d(
-                128, 128, kernel_size=1, stride=1,
+                64, 64, kernel_size=1, stride=1,
                 padding=0, bias=False),
         )
         self.up1 = nn.Upsample(scale_factor=4)
@@ -261,9 +261,9 @@ class BGALayer(nn.Module):
         ##TODO: does this really has no relu?
         self.conv = nn.Sequential(
             nn.Conv2d(
-                128, 128, kernel_size=3, stride=1,
+                64, 64, kernel_size=3, stride=1,
                 padding=1, bias=False),
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(64),
             nn.ReLU(inplace=True), # not shown in paper
         )
 
@@ -292,7 +292,7 @@ class SegmentHead(nn.Module):
 
         out_chan = n_classes
         mid_chan2 = up_factor * up_factor if aux else mid_chan
-        up_factor = up_factor // 2 if aux else up_factor
+        # up_factor = up_factor // 2 if aux else up_factor
         self.conv_out = nn.Sequential(
             nn.Sequential(
                 nn.Upsample(scale_factor=2),
@@ -339,10 +339,10 @@ class BiSeNetV2(nn.Module):
 
         self.head = SegmentHead(64, 256, n_classes, up_factor=8, aux=False)
         if self.aux_mode == 'train':
-            self.aux2 = SegmentHead(16, 64, n_classes, up_factor=2)
-            self.aux3 = SegmentHead(32, 64, n_classes, up_factor=4)
-            self.aux4 = SegmentHead(64, 64, n_classes, up_factor=8)
-            self.aux5_4 = SegmentHead(64, 64, n_classes, up_factor=8)
+            self.aux2 = SegmentHead(8, 64, n_classes, up_factor=2)
+            self.aux3 = SegmentHead(16, 64, n_classes, up_factor=4)
+            self.aux4 = SegmentHead(32, 64, n_classes, up_factor=8)
+            self.aux5_4 = SegmentHead(64, 64, n_classes, up_factor=16)
 
         self.init_weights()
 
@@ -350,11 +350,23 @@ class BiSeNetV2(nn.Module):
         size = x.size()[2:]
         feat_d = self.detail(x)
         feat2, feat3, feat4, feat5_4, feat_s = self.segment(x)
+
+        # print(f"11111111:{feat_d.shape}")
+
+        device = feat_d.device
+
+        conv = nn.Conv2d(32, 64, kernel_size=1, stride=1, padding=0, bias=True).to(device)
+        feat_d = conv(feat_d)
+
+        # print(f"2222222222:{feat_d.shape}")
+
         feat_head = self.bga(feat_d, feat_s)
+        # print(f"111111: {feat2.shape}")
 
         logits = self.head(feat_head)
         if self.aux_mode == 'train':
             logits_aux2 = self.aux2(feat2)
+
             logits_aux3 = self.aux3(feat3)
             logits_aux4 = self.aux4(feat4)
             logits_aux5_4 = self.aux5_4(feat5_4)
@@ -379,7 +391,7 @@ class BiSeNetV2(nn.Module):
                 else:
                     nn.init.ones_(module.weight)
                 nn.init.zeros_(module.bias)
-        self.load_pretrain()
+        # self.load_pretrain()
 
 
     def load_pretrain(self):
