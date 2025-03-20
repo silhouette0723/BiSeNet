@@ -7,13 +7,13 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 # for bvac
-DATA_DIR = "/workspace/Bisenetv2"
+# DATA_DIR = "/workspace/Bisenetv2"
 
 # # for windows
 # DATA_DIR = "D:\\Hair_Segmentation\\Data"
 
 # for wsl
-# DATA_DIR = "/mnt/d/Hair_Segmentation/Data"
+DATA_DIR = "/mnt/d/Hair_Segmentation/Data"
 #(H, W)
 INPUT_SIZE = (192, 160)
 
