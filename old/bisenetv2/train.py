@@ -16,7 +16,9 @@ import torch.nn as nn
 import torch.distributed as dist
 from torch.utils.data import DataLoader
 
-from bisenetv2.bisenetv2 import BiSeNetV2
+from bisenetv2.bisenetv2_prune import BiSeNetV2
+
+# from bisenetv2.bisenetv2 import BiSeNetV2
 from bisenetv2.cityscapes_cv2 import get_data_loader
 from bisenetv2.evaluatev2 import eval_model
 from bisenetv2.ohem_ce_loss import OhemCELoss
