@@ -61,7 +61,7 @@ class DetailBranch(nn.Module):
         self.S3 = nn.Sequential(
             ConvBNReLU(16, 32, 3, stride=2),
             ConvBNReLU(32, 32, 3, stride=1),
-            ConvBNReLU(32, 32, 3, stride=1),
+            ConvBNReLU(32, 64, 3, stride=1),
         )
 
     def forward(self, x):
@@ -292,7 +292,7 @@ class SegmentHead(nn.Module):
 
         out_chan = n_classes
         mid_chan2 = up_factor * up_factor if aux else mid_chan
-        # up_factor = up_factor // 2 if aux else up_factor
+        up_factor = up_factor * 2 if aux else up_factor
         self.conv_out = nn.Sequential(
             nn.Sequential(
                 nn.Upsample(scale_factor=2),
@@ -339,10 +339,10 @@ class BiSeNetV2(nn.Module):
 
         self.head = SegmentHead(64, 256, n_classes, up_factor=8, aux=False)
         if self.aux_mode == 'train':
-            self.aux2 = SegmentHead(8, 64, n_classes, up_factor=2)
-            self.aux3 = SegmentHead(16, 64, n_classes, up_factor=4)
-            self.aux4 = SegmentHead(32, 64, n_classes, up_factor=8)
-            self.aux5_4 = SegmentHead(64, 64, n_classes, up_factor=16)
+            self.aux2 = SegmentHead(8, 64, n_classes, up_factor=1)
+            self.aux3 = SegmentHead(16, 64, n_classes, up_factor=2)
+            self.aux4 = SegmentHead(32, 64, n_classes, up_factor=4)
+            self.aux5_4 = SegmentHead(64, 64, n_classes, up_factor=8)
 
         self.init_weights()
 
@@ -353,10 +353,10 @@ class BiSeNetV2(nn.Module):
 
         # print(f"11111111:{feat_d.shape}")
 
-        device = feat_d.device
+        # # device = feat_d.device
 
-        conv = nn.Conv2d(32, 64, kernel_size=1, stride=1, padding=0, bias=True).to(device)
-        feat_d = conv(feat_d)
+        # # conv = nn.Conv2d(32, 64, 1, 1, 0).to(device)
+        # # feat_d = conv(feat_d)
 
         # print(f"2222222222:{feat_d.shape}")
 
