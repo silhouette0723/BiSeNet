@@ -20,7 +20,7 @@ import torch.distributed as dist
 
 from bisenetv2.bisenetv2 import BiSeNetV2
 from bisenetv2.logger import setup_logger
-from bisenetv2.cityscapes_cv2 import get_data_loader
+# from bisenetv2.cityscapes_cv2 import get_data_loader
 
 from bisenetv2.hair_dataset import HairSegmentationDataset as Hair_Dt
 from torch.utils.data import DataLoader

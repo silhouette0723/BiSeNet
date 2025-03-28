@@ -20,8 +20,7 @@ def setup_logger(name, logpth):
     logging.root.addHandler(logging.StreamHandler())
 
 
-def print_log_msg(it, max_iter, lr, time_meter, loss_meter, loss_pre_meter,
-        loss_aux_meters):
+def print_log_msg(it, max_iter, lr, time_meter, loss_meter, loss_pre_meter, loss_aux_meters):
     t_intv, eta = time_meter.get()
     loss_avg, _ = loss_meter.get()
     loss_pre_avg, _ = loss_pre_meter.get()

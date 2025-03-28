@@ -20,7 +20,12 @@ from bisenetv2.logger import setup_logger, print_log_msg
 from bisenetv2.hair_dataset import HairSegmentationDataset as Hair_Dt
 
 # 设置要训练的模型文件
-MODEL_VARIANTS = ["170", "190", "210", "213", "233"]
+MODEL_VARIANTS = ["190", "210", "213", "233"]
+
+d["190"] = 1
+d["210"] = 2
+d["213"] = 2
+d["233"] = 3
 
 # 训练超参数
 lr_start = 5e-2
@@ -43,27 +48,25 @@ def set_model(variant):
     module_name = f"bisenetv2.bv2_{variant}MB"
     net_module = __import__(module_name, fromlist=["BiSeNetV2"])
     net = net_module.BiSeNetV2(2)
-    if args.sync_bn:
-        net = nn.SyncBatchNorm.convert_sync_batchnorm(net)
     net.cuda()
     net.train()
     criteria_pre = OhemCELoss(0.7)
-    criteria_aux = [OhemCELoss(0.7) for _ in range(4)]
+    num = d[variant]
+    criteria_aux = [OhemCELoss(0.7) for _ in range(num)]
     return net, criteria_pre, criteria_aux
 
 def train_model(variant, epochs=100):
     logger = logging.getLogger()
     dataset = Hair_Dt("train")
-    dl = DataLoader(dataset, batch_size=64, shuffle=True)
+    dl = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=4)
 
     net, criteria_pre, criteria_aux = set_model(variant)
     optim = torch.optim.SGD(
         [{'params': param, 'weight_decay': 5e-4 if param.dim() in [2, 4] else 0} for param in net.parameters()],
         lr=lr_start, momentum=0.9
     )
-
-    net = nn.parallel.DistributedDataParallel(net, device_ids=[args.local_rank])
-    time_meter, loss_meter, loss_pre_meter, loss_aux_meters = TimeMeter(max_iter), AvgMeter('loss'), AvgMeter('loss_pre'), [AvgMeter(f'loss_aux{i}') for i in range(4)]
+    num = d[variant]
+    time_meter, loss_meter, loss_pre_meter, loss_aux_meters = TimeMeter(max_iter), AvgMeter('loss'), AvgMeter('loss_pre'), [AvgMeter(f'loss_aux{i}') for i in range(num)]
     lr_schdr = WarmupPolyLrScheduler(optim, power=0.9, max_iter=max_iter, warmup_iter=warmup_iters, warmup_ratio=0.1, warmup='exp')
 
     for epoch in range(epochs):
