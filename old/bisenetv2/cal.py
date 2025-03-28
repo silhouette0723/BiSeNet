@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
-import bisenetv2_260MB as bv2
+import bisenetv2_200MB as bv2
 
 def profile_onnx_model(model_path):
     import onnx_tool
@@ -20,9 +20,9 @@ def profile_onnx_model(model_path):
     
 def convert_bisenetv2():
     device = torch.device("cuda")
-    pth_model_path = "res/model_260MB_epoch_100.pth"
+    # pth_model_path = "res/model_260MB_epoch_100.pth"
     model = bv2.BiSeNetV2(2).to(device)
-    model.load_state_dict(torch.load(pth_model_path, map_location=device, weights_only=True))
+    # model.load_state_dict(torch.load(pth_model_path, map_location=device, weights_only=True))
     model.eval()
     
     src = torch.rand(1, 3, 160, 96).cuda()
