@@ -50,9 +50,10 @@ max_iter = 150000  + warmup_iters
 ims_per_gpu = 8
 
 d = {}
+d["170"] = 0
 d["190"] = 1
 d["210"] = 2
-d["213"] = 2
+d["214"] = 2
 d["233"] = 3
 
 def parse_args():
@@ -140,7 +141,7 @@ def save_model(states, save_pth):
             torch.save(state, modelpth)
 
 
-def train(epochs=10):  # 允许传入 epochs 参数，默认为 100 轮
+def train(epochs=100):  # 允许传入 epochs 参数，默认为 100 轮
     logger = logging.getLogger()
     is_dist = dist.is_initialized()
 
@@ -197,7 +198,7 @@ def train(epochs=10):  # 允许传入 epochs 参数，默认为 100 轮
 
         # 每个 epoch 结束后保存模型
         if (epoch + 1) % 25 == 0:  # 例如，每 10 个 epoch 保存一次
-        # if True:
+#         if True:
             save_pth = osp.join(args.respth, f'model_{args.loadmodel_size}MB_epoch_{epoch+1}.pth')
             if dist.get_rank() == 0:
                 torch.save(net.module.state_dict(), save_pth)
