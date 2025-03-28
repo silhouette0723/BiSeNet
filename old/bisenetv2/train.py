@@ -133,12 +133,12 @@ def save_model(states, save_pth):
             torch.save(state, modelpth)
 
 
-def train(epochs=10):  # 允许传入 epochs 参数，默认为 100 轮
+def train(epochs=100):  # 允许传入 epochs 参数，默认为 100 轮
     logger = logging.getLogger()
     is_dist = dist.is_initialized()
 
-    dataset = Hair_Dt("val")
-    dl = DataLoader(dataset, batch_size=16, shuffle=True)
+    dataset = Hair_Dt("train")
+    dl = DataLoader(dataset, batch_size=64, shuffle=True)
 
     net, criteria_pre, criteria_aux = set_model()
     optim = set_optimizer(net)
@@ -194,9 +194,9 @@ def train(epochs=10):  # 允许传入 epochs 参数，默认为 100 轮
                 print_log_msg(it, max_iter, lr, time_meter, loss_meter, loss_pre_meter, loss_aux_meters)
 
         # 每个 epoch 结束后保存模型
-        # if (epoch + 1) % 10 == 0:  # 例如，每 10 个 epoch 保存一次
-        if True:
-            save_pth = osp.join(args.respth, f'model_epoch_{epoch+1}.pth')
+        if (epoch + 1) % 20 == 0:  # 例如，每 10 个 epoch 保存一次
+        # if True:
+            save_pth = osp.join(args.respth, f'model_260MB_epoch_{epoch+1}.pth')
             if dist.get_rank() == 0:
                 torch.save(net.module.state_dict(), save_pth)
             logger.info(f'Model saved at epoch {epoch+1}')

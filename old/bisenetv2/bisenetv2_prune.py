@@ -1,3 +1,5 @@
+## semantic 1, Segment 2
+
 
 import torch
 import torch.nn as nn
@@ -292,7 +294,7 @@ class SegmentHead(nn.Module):
 
         out_chan = n_classes
         mid_chan2 = up_factor * up_factor if aux else mid_chan
-        up_factor = up_factor * 2 if aux else up_factor
+        up_factor = up_factor if aux else up_factor
         self.conv_out = nn.Sequential(
             nn.Sequential(
                 nn.Upsample(scale_factor=2),
@@ -339,10 +341,10 @@ class BiSeNetV2(nn.Module):
 
         self.head = SegmentHead(64, 256, n_classes, up_factor=8, aux=False)
         if self.aux_mode == 'train':
-            self.aux2 = SegmentHead(8, 64, n_classes, up_factor=1)
-            self.aux3 = SegmentHead(16, 64, n_classes, up_factor=2)
-            self.aux4 = SegmentHead(32, 64, n_classes, up_factor=4)
-            self.aux5_4 = SegmentHead(64, 64, n_classes, up_factor=8)
+            self.aux2 = SegmentHead(8, 64, n_classes, up_factor=2)
+            self.aux3 = SegmentHead(16, 64, n_classes, up_factor=4)
+            self.aux4 = SegmentHead(32, 64, n_classes, up_factor=8)
+            self.aux5_4 = SegmentHead(64, 64, n_classes, up_factor=16)
 
         self.init_weights()
 
