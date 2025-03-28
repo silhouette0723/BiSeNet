@@ -1,4 +1,4 @@
-## semantic 1, Segment 2
+## no return of feat2, feat3, feat4
 
 
 import torch
@@ -217,15 +217,10 @@ class SegmentBranch(nn.Module):
     def forward(self, x):
         feat2 = self.S1S2(x)
         feat3 = self.S3(feat2)
-
-        # print(f"x.shape: {x.shape}")
-        # print(f"feat2.shape: {feat2.shape}")
-        # print(f"feat3.shape: {feat3.shape}")
-
         feat4 = self.S4(feat3)
         feat5_4 = self.S5_4(feat4)
         feat5_5 = self.S5_5(feat5_4)
-        return feat4, feat5_4, feat5_5
+        return feat5_4, feat5_5
 
 
 class BGALayer(nn.Module):
@@ -356,7 +351,7 @@ class BiSeNetV2(nn.Module):
     def forward(self, x):
         size = x.size()[2:]
         feat_d = self.detail(x)
-        feat4, feat5_4, feat_s = self.segment(x)
+        feat5_4, feat_s = self.segment(x)
 
         # print(f"11111111:{feat_d.shape}")
 
@@ -374,10 +369,10 @@ class BiSeNetV2(nn.Module):
         if self.aux_mode == 'train':
             # logits_aux2 = self.aux2(feat2)
             # logits_aux3 = self.aux3(feat3)
-            logits_aux4 = self.aux4(feat4)
+            # logits_aux4 = self.aux4(feat4)
             logits_aux5_4 = self.aux5_4(feat5_4)
             # return logits, logits_aux2, logits_aux3, logits_aux4, logits_aux5_4
-            return logits, logits_aux4, logits_aux5_4
+            return logits, logits_aux5_4
         elif self.aux_mode == 'eval':
             return logits,
         elif self.aux_mode == 'pred':

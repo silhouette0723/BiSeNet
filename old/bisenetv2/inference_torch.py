@@ -1,7 +1,7 @@
 import cv2
 import torch
 import numpy as np
-import bisenetv2_260MB as bv2
+import bv2_260MB as bv2
 from torchvision import transforms
 
 INPUt_SIZE = (160, 96)

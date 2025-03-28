@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
-import bisenetv2_200MB as bv2
+import bv2_214MB as bv2
 
 def profile_onnx_model(model_path):
     import onnx_tool
