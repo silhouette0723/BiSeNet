@@ -17,19 +17,34 @@ def preprocess(image, device):
 
 # 推理函数
 def infer(model, image, device):
-    model.eval()
+    model.aux_mode = 'pred'
     with torch.no_grad():
-        input_tensor = preprocess(image, device)
-        output = model(input_tensor)[0]
-        mask = torch.argmax(output, dim=1).squeeze().cpu().numpy()
-        mask = (mask > 0).astype(np.uint8) * 255
-    return mask
+        input = preprocess(image, device)
+        input_tensor = input.squeeze(0)
+        # print(input_tensor.shape)
+        image_tensors = []
+        image_tensors.append(input_tensor)
+        image_tensors.append(input_tensor)
+        batch = torch.stack(image_tensors, dim=0).to(device)
+        # print(batch.shape)
+        pred_masks = model(batch)
+        mask = pred_masks[0][1]
+        pred_numpy = mask.cpu().numpy()
+        # print(pred_numpy.shape)
+    return pred_numpy
 
 # 叠加半透明图层
 def overlay_mask(image, mask):
     overlay = image.copy()
-    overlay[mask == 255] = [0, 0, 255]  # 红色标注
-    return cv2.addWeighted(overlay, 0.5, image, 0.5, 0)
+    alpha = (mask / 255.0).astype(np.float32)
+
+    green_layer = np.zeros_like(image, dtype=np.uint8)
+    green_layer[:, :, 1] = 255
+
+    overlay = image.astype(np.float32) * (1 - alpha[..., None]) + green_layer.astype(np.float32) * alpha[..., None]
+    overlay = np.clip(overlay, 0, 255).astype(np.uint8)
+    # overlay[mask == 255] = [0, 0, 255]  # 红色标注
+    return overlay
 
 # 处理单张图片
 def process_image(image_path, model, device):
@@ -51,7 +66,7 @@ def process_video(video_path, model, device):
             break
         h, w = frame.shape[:2]
         mask = infer(model, frame, device)
-        mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
+        mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_LINEAR)
         result = overlay_mask(frame, mask)
         out.write(result)
     

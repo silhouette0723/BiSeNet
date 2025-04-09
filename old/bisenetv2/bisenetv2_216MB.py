@@ -376,8 +376,10 @@ class BiSeNetV2(nn.Module):
         elif self.aux_mode == 'eval':
             return logits,
         elif self.aux_mode == 'pred':
-            #  pred = logits.argmax(dim=1)
-            pred = CustomArgMax.apply(logits, 1)
+            # pred = CustomArgMax.apply(logits, 1)
+            prob = torch.sigmoid(logits)
+            prob = prob * 255
+            pred = prob.squeeze(1).byte()
             return pred
         else:
             raise NotImplementedError
