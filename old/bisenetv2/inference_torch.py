@@ -1,14 +1,16 @@
 import cv2
 import torch
 import numpy as np
-import bv2_260MB as bv2
+# import bv2_260MB as bv2
+import bisenetv2_216MB as bv2
 from torchvision import transforms
 
 INPUt_SIZE = (160, 96)
+size = 216
 
 def preprocess(image, device):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(image, (INPUt_SIZE[1], INPUt_SIZE[0]), interpolation=cv2.INTER_AREA) 
+    image = cv2.resize(image, (INPUt_SIZE[1], INPUt_SIZE[0]), interpolation=cv2.INTER_LINEAR_EXACT) 
     image = torch.tensor(image, dtype=torch.float32).permute(2, 0, 1) / 255.0
     image = image.unsqueeze(0).to(device)
     return image
@@ -36,19 +38,20 @@ def process_image(image_path, model, device):
     result = overlay_mask(image, mask)
     cv2.imwrite("output.png", result)
     print("Image processing complete. Saved as output.png")
-
 # 处理视频
 def process_video(video_path, model, device):
     cap = cv2.VideoCapture(video_path)
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter('output.avi', fourcc, cap.get(cv2.CAP_PROP_FPS), 
+    out = cv2.VideoWriter(f'res/{size}.avi', fourcc, cap.get(cv2.CAP_PROP_FPS), 
                           (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
     
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
+        h, w = frame.shape[:2]
         mask = infer(model, frame, device)
+        mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
         result = overlay_mask(frame, mask)
         out.write(result)
     
@@ -58,12 +61,14 @@ def process_video(video_path, model, device):
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    pth_model_path = "res/model_260MB_epoch_100.pth"
+    pth_model_path = f"res/model_{size}MB_epoch_100.pth"
     model = bv2.BiSeNetV2(2).to(device)
     model.load_state_dict(torch.load(pth_model_path, map_location=device, weights_only=True))
     
-    input_type = input("Enter 'image' for image processing or 'video' for video processing: ")
-    input_path = input("Enter the file path: ")
+    # input_type = input("Enter 'image' for image processing or 'video' for video processing: ")
+    # input_path = input("Enter the file path: ")
+    input_type = 'video'
+    input_path = '/mnt/c/Users/xietianhan/Downloads/mv1.mp4'
     
     if input_type == 'image':
         process_image(input_path, model, device)
