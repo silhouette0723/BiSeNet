@@ -101,8 +101,8 @@ def set_model():
     net.cuda()
     net.train()
     num = d[f'{varient}']
-    criteria_pre = OhemCELoss(0.7)
-    criteria_aux = [OhemCELoss(0.7) for _ in range(num)]
+    criteria_pre = FocalLoss(gamma=2)
+    criteria_aux = [FocalLoss(gamma=2) for _ in range(num)]
     return net, criteria_pre, criteria_aux
 
 def set_syncbn(net):
