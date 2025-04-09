@@ -49,6 +49,30 @@ warmup_iters = 3000
 max_iter = 150000  + warmup_iters
 ims_per_gpu = 8
 
+import torch.nn.functional as F
+
+class FocalLoss(nn.Module):
+    def __init__(self,gamma=2,weight=None):
+        '''
+        alpha: positive samples ratio
+        '''
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        if weight is None:
+            self.weight = None
+        else:
+            weight = np.array(weight, dtype=np.float32)
+            self.weight = torch.from_numpy(weight).reshape((-1,)).cuda()
+    def forward(self, inputs, targets):
+        '''
+        inputs: BxCxHxW
+        targets: BxCxHxW
+        '''
+        ce_loss = F.cross_entropy(inputs, targets, weight= self.weight, reduction = 'none')
+        pt = torch.exp(-ce_loss)
+        focal_loss = (1-pt)**self.gamma*ce_loss
+        return focal_loss.mean()
+
 d = {}
 d["170"] = 0
 d["190"] = 1
